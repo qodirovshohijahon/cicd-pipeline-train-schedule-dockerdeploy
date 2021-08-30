@@ -34,5 +34,26 @@ pipeline {
                 }
             }
         }
+        stage('Deploy') {
+            when {
+                branch 'master'
+            }
+            steps {
+                input 'Deploy to Production'
+                milestone(1)
+                withCredentials([usernamePassword(credentials: 'webserver_login', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
+                    script {
+                        sh "sshpass -p '$USERPASS' -v ssh -o StrictHostKeyChecking=no $USERNAME@prod_ip \"docker pull qodirovsher/train-schedule:${env.BUILD_NUMBER}\""
+                        try {
+                            sh "sshpass -p '$USERPASS' -v ssh -o StrictHostKeyChecking=no $USERNAME@prod_ip \"docker stop train-schedule\""
+                            sh "sshpass -p '$USERPASS' -v ssh -o StrictHostKeyChecking=no $USERNAME@prod_ip \"docker rm train-schedule\""
+                        } catch (err) {
+                            echo: 'caught error: $err'
+                        }
+                        sh "sshpass -p '$USERPASS' -v ssh -o StrictHostKeyChecking=no $USERNAME@prod_ip \"docker run --restart always --name train-schedule -p 8080:8080 -p 4848:4848 --name train-schedule -d qodirovsher/train-schedule:${env.BUILD_NUMBER}\""
+                    }
+                }
+            }
+        }
     }
 }
