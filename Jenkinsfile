@@ -34,7 +34,7 @@ pipeline {
                 }
             }
         }
-        stage('Deploy') {
+        stage('DeployToProduction') {
             when {
                 branch 'master'
             }
